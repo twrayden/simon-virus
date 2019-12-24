@@ -4,16 +4,14 @@ use std::io::Error;
 
 #[cfg(windows)]
 fn start_virus() -> Result<i32, Error> {
-  use winapi::shared::windef::POINT;
+  use winapi::shared::windef::{POINT, RECT};
   use winapi::um::winuser::{
-    GetAsyncKeyState, GetCursorPos, GetWindowInfo, IsWindow, SetWindowPos, ShowWindow,
-    WindowFromPoint, HWND_TOP, SW_SHOWNORMAL, VK_MENU, VK_SHIFT, WINDOWINFO, WS_TILED,
+    GetAncestor, GetAsyncKeyState, GetCursorPos, GetForegroundWindow, GetSystemMetrics,
+    GetWindowRect, IsWindow, SetWindowPos, WindowFromPoint, GA_ROOT, HWND_TOP, SM_CXSCREEN,
+    SM_CYSCREEN, VK_MENU, VK_SHIFT,
   };
 
   let mut running = true;
-
-  let mut last_x = 0;
-  let mut last_y = 0;
 
   while running {
     unsafe {
@@ -25,50 +23,52 @@ fn start_virus() -> Result<i32, Error> {
 
       GetCursorPos(&mut current_pos);
 
-      let current_window = WindowFromPoint(current_pos);
+      let current_window = GetForegroundWindow();
+      let over_window = WindowFromPoint(current_pos);
 
-      let mut window_info = WINDOWINFO {};
+      let mut current_rect = RECT {
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+      };
 
-      GetWindowInfo(current_window, &mut window_info);
+      GetWindowRect(current_window, &mut current_rect);
 
-      if IsWindow(current_window) != 0 && window_info.dwStyle == WS_TILED {
+      if IsWindow(current_window) != 0
+        && current_window == GetAncestor(current_window, GA_ROOT)
+        && over_window == current_window
+      {
         let curr_pos = &current_pos;
+        let curr_rect = &current_rect;
 
-        let curr_x = curr_pos.x;
-        let curr_y = curr_pos.y;
+        let curr_x_offset = 5;
+        let curr_y_offset = 5;
 
-        let curr_x_distance = curr_x - last_x;
-        let curr_y_distance = curr_y - last_y;
+        let mut curr_x = curr_pos.x + curr_x_offset;
+        let mut curr_y = curr_pos.y + curr_y_offset;
 
-        let curr_x_offset = if curr_x_distance < 0 {
-          return -10;
-        } else {
-          return 10;
-        };
+        let screen_x = GetSystemMetrics(SM_CXSCREEN);
+        let screen_y = GetSystemMetrics(SM_CYSCREEN);
 
-        let curr_y_offset = if curr_y_distance < 0 {
-          return -10;
-        } else {
-          return 10;
-        };
+        if curr_rect.right > screen_x {
+          curr_x = 0;
+        } else if curr_rect.bottom > screen_y {
+          curr_y = 0;
+        } else if curr_rect.left < 0 {
+          curr_x = screen_x;
+        } else if curr_rect.top < 0 {
+          curr_y = screen_y;
+        }
 
-        println!("x: {} y: {}", curr_pos.x, curr_pos.y);
+        let width = curr_x + 100;
+        let height = curr_y + 100;
 
-        ShowWindow(current_window, SW_SHOWNORMAL);
+        println!("screen - x: {} y {}", screen_x, screen_y);
+        println!("cursor - x: {} y: {}", curr_pos.x, curr_pos.y);
 
-        SetWindowPos(
-          current_window,
-          HWND_TOP,
-          curr_pos.x + curr_x_offset,
-          curr_pos.y + curr_y_offset,
-          curr_pos.x + 100,
-          curr_pos.y + 100,
-          0,
-        );
+        SetWindowPos(current_window, HWND_TOP, curr_x, curr_y, width, height, 0);
       }
-
-      last_x = curr_pos.x;
-      last_y = curr_pos.y;
     }
   }
 
