@@ -1,57 +1,81 @@
-#[cfg(windows)] extern crate winapi;
+#[cfg(windows)]
+extern crate winapi;
 use std::io::Error;
 
 #[cfg(windows)]
 fn start_virus() -> Result<i32, Error> {
-    use std::ffi::OsStr;
-    use std::iter::once;
-    use std::os::windows::ffi::OsStrExt;
-    use std::ptr::null_mut;
-    use winapi::shared::windef::{RECT, POINT};
-    use winapi::um::winuser::{MoveWindow, GetActiveWindow, GetCursorPos, GetWindowRect, GetAsyncKeyState, VK_MENU};
+    use winapi::shared::windef::POINT;
+    use winapi::um::winuser::{
+        GetAsyncKeyState, GetCursorPos, IsWindow, SetWindowPos, ShowWindow, WindowFromPoint,
+        HWND_TOP, SW_SHOWNORMAL, VK_MENU, VK_SHIFT,
+    };
 
     let mut running = true;
 
+    let mut last_x = 0;
+    let mut last_y = 0;
+
     while running {
+        unsafe {
+            if GetAsyncKeyState(VK_MENU) != 0 && GetAsyncKeyState(VK_SHIFT) != 0 {
+                running = false;
+            }
 
-     unsafe {
-      if GetAsyncKeyState(VK_MENU) == 1 {
-        running = false;
-      }
+            let mut current_pos = POINT { x: 0, y: 0 };
 
-      let current_window = GetActiveWindow();
+            GetCursorPos(&mut current_pos);
 
-      let mut current_pos = POINT { x: 0, y: 0 };
+            let current_window = WindowFromPoint(current_pos);
 
-      let mut current_rect = RECT { left: 0, right: 0, top: 0, bottom: 0 };
-      
-      GetWindowRect(current_window, &mut current_rect);
-      
-      GetCursorPos(&mut current_pos);
+            if IsWindow(current_window) != 0 {
+                let curr_pos = &current_pos;
+                
+                let curr_x = curr_pos.x;
+                let curr_y = curr_pos.y;
 
-      let curr_pos = &current_pos;
-      let curr_rect = &current_rect;
-      let win_width = curr_rect.right - curr_rect.left;
-      let win_height = curr_rect.bottom - curr_rect.top;
+                let curr_x_distance = curr_x - last_x;
+                let curr_y_distance = curr_y - last_y;
 
-      println!("x: {} y: {}", curr_pos.x, curr_pos.y);
-      println!("rect: {}", curr_rect.left);
-      println!("width: {} height: {}", win_width, win_height);
+                
+                let curr_x_offset = if curr_x_distance < 0 {
+                    return -10;
+                } else {
+                    return 10;
+                }
 
-      MoveWindow(current_window, curr_pos.x, curr_pos.y, win_width, win_height, 0);
-     }
-    
+                let curr_y_offset if curr_y_distance < 0 {
+                    return -10;
+                } else {
+                    return 10;
+                }
+
+                println!("x: {} y: {}", curr_pos.x, curr_pos.y);
+                
+                ShowWindow(current_window, SW_SHOWNORMAL);
+
+                SetWindowPos(
+                    current_window,
+                    HWND_TOP,
+                    curr_pos.x + curr_x_offset,
+                    curr_pos.y + curr_y_offset,
+                    curr_pos.x + 100,
+                    curr_pos.y + 100,
+                    0,
+                );
+            }
+
+            last_x = curr_pos.x;
+            last_y = curr_pos.y;
+        }
     }
 
     return Ok(0);
 }
 
-
 #[cfg(not(windows))]
 fn start_virus() -> Result<(), Error> {
     return Ok(());
 }
-
 
 fn main() {
     start_virus().unwrap();
