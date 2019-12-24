@@ -7,27 +7,39 @@ fn start_virus() -> Result<i32, Error> {
     use std::iter::once;
     use std::os::windows::ffi::OsStrExt;
     use std::ptr::null_mut;
-    use winapi::um::winuser::{MB_OK, MoveWindow, GetCapture, GetCursorPos, LPPOINT, GetWindowRect, LPRECT, GetAsyncKeyState, VK_MENU, VK_SHIFT, VK_ESCAPE};
+    use winapi::shared::windef::{RECT, POINT};
+    use winapi::um::winuser::{MoveWindow, GetActiveWindow, GetCursorPos, GetWindowRect, GetAsyncKeyState, VK_MENU};
 
-    let running = true;
+    let mut running = true;
 
-    while(running) {
+    while running {
 
-      if (GetAsyncKeyState(VK_MENU) == 1 && GetAsyncKeyState(VK_SHIFT) == 1 && GetAsyncKeyState(VK_ESCAPE) == 1) {
+     unsafe {
+      if GetAsyncKeyState(VK_MENU) == 1 {
         running = false;
       }
 
-      let current_window = GetCapture();
+      let current_window = GetActiveWindow();
 
-      let current_pos = LPPOINT { x: 0, y: 0 };
+      let mut current_pos = POINT { x: 0, y: 0 };
 
-      let current_rect = LPRECT {width: 0, height:0};
+      let mut current_rect = RECT { left: 0, right: 0, top: 0, bottom: 0 };
       
-      GetWindowRect(&current_window, &current_rect);
+      GetWindowRect(current_window, &mut current_rect);
       
-      GetCursorPos(&current_pos);
+      GetCursorPos(&mut current_pos);
 
-      MoveWindow(current_window, current_pos.x + 10, current_pos.y + 10, current_rect.width, current_rect.height, false);
+      let curr_pos = &current_pos;
+      let curr_rect = &current_rect;
+      let win_width = curr_rect.right - curr_rect.left;
+      let win_height = curr_rect.bottom - curr_rect.top;
+
+      println!("x: {} y: {}", curr_pos.x, curr_pos.y);
+      println!("rect: {}", curr_rect.left);
+      println!("width: {} height: {}", win_width, win_height);
+
+      MoveWindow(current_window, curr_pos.x, curr_pos.y, win_width, win_height, 0);
+     }
     
     }
 
