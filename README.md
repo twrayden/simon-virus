@@ -1,5 +1,5 @@
 ### Goals
 
-- Make windows move away from mouse
-- If he opens a window close it straight away
-- Open up random windows
+- [x] Make open windows run away from mouse
+- [ ] Randomly close windows
+- [ ] Chance to open a random windows program (whilst PC in use)
