@@ -1,3 +1,5 @@
+# simon-virus
+
 ### Goals
 
 - [x] Make open windows run away from mouse
