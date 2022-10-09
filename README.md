@@ -1,5 +1,7 @@
 # simon-virus
 
+A harmless virus I made to troll Simon and learn Rust.
+
 ### Goals
 
 - [x] Make open windows run away from mouse
